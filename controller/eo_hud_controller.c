@@ -998,3 +998,1256 @@ static void DrawHud(void)
             }
         }
     }
+    else
+    {
+        DrawPixel(
+            64,
+            36
+        );
+
+        DrawPixel(
+            63,
+            36
+        );
+
+        DrawPixel(
+            65,
+            36
+        );
+
+        DrawPixel(
+            64,
+            35
+        );
+
+        DrawPixel(
+            64,
+            37
+        );
+    }
+
+
+    /* ---------------------------------------------------------------------
+     * LIVE AZIMUTH
+     * ------------------------------------------------------------------ */
+
+    snprintf(
+        text,
+        sizeof(text),
+        "AZ %03d",
+        currentPan
+    );
+
+
+    DrawText(
+        0,
+        6,
+        text
+    );
+
+
+    DrawDegreeSymbol(
+        38,
+        49
+    );
+
+
+    /* ---------------------------------------------------------------------
+     * LIVE ELEVATION
+     * ------------------------------------------------------------------ */
+
+    snprintf(
+        text,
+        sizeof(text),
+        "EL %03d",
+        currentTilt
+    );
+
+
+    DrawText(
+        72,
+        6,
+        text
+    );
+
+
+    DrawDegreeSymbol(
+        110,
+        49
+    );
+
+
+    /* ---------------------------------------------------------------------
+     * CAMERA STATUS
+     * ------------------------------------------------------------------ */
+
+    DrawText(
+        0,
+        7,
+        "CAM"
+    );
+
+
+    DrawStatusDot(
+        24,
+        60,
+        CameraConnected()
+    );
+
+
+    /* ---------------------------------------------------------------------
+     * TARGET STATUS
+     * ------------------------------------------------------------------ */
+
+    DrawText(
+        36,
+        7,
+        "TGT"
+    );
+
+    DrawStatusDot(
+        60,
+        60,
+        targetPresent
+    );
+
+
+    /* ---------------------------------------------------------------------
+     * UART STATUS
+     * ------------------------------------------------------------------ */
+
+    DrawText(
+        70,
+        7,
+        "LINK"
+    );
+
+
+    DrawStatusDot(
+        104,
+        60,
+        uartOnline
+    );
+}
+
+
+/* ============================================================================
+ * UPDATE PHYSICAL OLED
+ * ========================================================================== */
+
+static int OledUpdate(void)
+{
+    uint8_t page;
+    uint8_t x;
+
+    uint8_t packet[17];
+
+
+    packet[0] =
+        0x40;
+
+
+    for (page = 0;
+         page < OLED_PAGES;
+         page++)
+    {
+        if (OledCommand(
+                (uint8_t)(
+                    0xB0 +
+                    page
+                )) != 0)
+        {
+            return -1;
+        }
+
+
+        if (OledCommand(
+                0x00) != 0)
+        {
+            return -1;
+        }
+
+
+        if (OledCommand(
+                0x10) != 0)
+        {
+            return -1;
+        }
+
+
+        for (x = 0;
+             x < OLED_WIDTH;
+             x += 16)
+        {
+            int i;
+
+
+            for (i = 0;
+                 i < 16;
+                 i++)
+            {
+                packet[i + 1] =
+                    framebuffer[
+                        (page *
+                         OLED_WIDTH) +
+                        x +
+                        i
+                    ];
+            }
+
+
+            if (write(
+                    oledFd,
+                    packet,
+                    sizeof(packet))
+                != (ssize_t)sizeof(packet))
+            {
+                return -1;
+            }
+        }
+    }
+
+
+    return 0;
+}
+
+
+/* ============================================================================
+ * REFRESH COMPLETE HUD
+ * ========================================================================== */
+
+static void RefreshHud(void)
+{
+    DrawHud();
+
+
+    if (OledUpdate() != 0)
+    {
+        fprintf(
+            stderr,
+            "WARNING: OLED update failed.\n"
+        );
+    }
+}
+
+
+/* ============================================================================
+ * UART CONFIGURATION
+ * ========================================================================== */
+
+static int ConfigureSerialPort(
+    int fd)
+{
+    struct termios tty;
+
+
+    if (tcgetattr(
+            fd,
+            &tty) != 0)
+    {
+        perror(
+            "tcgetattr"
+        );
+
+
+        return -1;
+    }
+
+
+    cfmakeraw(
+        &tty
+    );
+
+
+    if ((cfsetispeed(
+            &tty,
+            B115200) != 0) ||
+        (cfsetospeed(
+            &tty,
+            B115200) != 0))
+    {
+        perror(
+            "UART speed"
+        );
+
+
+        return -1;
+    }
+
+
+    tty.c_cflag &=
+        ~CSIZE;
+
+
+    tty.c_cflag |=
+        CS8;
+
+
+    tty.c_cflag &=
+        ~PARENB;
+
+
+    tty.c_cflag &=
+        ~CSTOPB;
+
+
+    tty.c_cflag |=
+        CLOCAL |
+        CREAD;
+
+
+#ifdef CRTSCTS
+
+    tty.c_cflag &=
+        ~CRTSCTS;
+
+#endif
+
+
+    tty.c_iflag &=
+        ~(
+            IXON |
+            IXOFF |
+            IXANY
+        );
+
+
+    tty.c_cc[VMIN] =
+        0;
+
+
+    tty.c_cc[VTIME] =
+        0;
+
+
+    if (tcsetattr(
+            fd,
+            TCSANOW,
+            &tty) != 0)
+    {
+        perror(
+            "tcsetattr"
+        );
+
+
+        return -1;
+    }
+
+
+    (void)tcflush(
+        fd,
+        TCIOFLUSH
+    );
+
+
+    return 0;
+}
+
+
+/* ============================================================================
+ * UART WRITE
+ * ========================================================================== */
+
+static int WriteAll(
+    int fd,
+    const char *text)
+{
+    size_t length;
+    size_t written;
+
+
+    length =
+        strlen(text);
+
+
+    written =
+        0U;
+
+
+    while (written <
+           length)
+    {
+        ssize_t result;
+
+
+        result =
+            write(
+                fd,
+                text + written,
+                length - written
+            );
+
+
+        if (result < 0)
+        {
+            if (errno ==
+                EINTR)
+            {
+                continue;
+            }
+
+
+            perror(
+                "UART write"
+            );
+
+
+            return -1;
+        }
+
+
+        written +=
+            (size_t)result;
+    }
+
+
+    if (tcdrain(
+            fd) != 0)
+    {
+        perror(
+            "tcdrain"
+        );
+
+
+        return -1;
+    }
+
+
+    return 0;
+}
+
+
+/* ============================================================================
+ * UART READ WITH TIMEOUT
+ * ========================================================================== */
+
+static int ReadLineTimeout(
+    int fd,
+    char *buffer,
+    size_t bufferSize,
+    int timeoutSeconds)
+{
+    size_t index =
+        0U;
+
+
+    while (index <
+           (bufferSize - 1U))
+    {
+        fd_set readSet;
+
+        struct timeval timeout;
+
+        int result;
+
+        char receivedCharacter;
+
+
+        FD_ZERO(
+            &readSet
+        );
+
+
+        FD_SET(
+            fd,
+            &readSet
+        );
+
+
+        timeout.tv_sec =
+            timeoutSeconds;
+
+
+        timeout.tv_usec =
+            0;
+
+
+        result =
+            select(
+                fd + 1,
+                &readSet,
+                NULL,
+                NULL,
+                &timeout
+            );
+
+
+        if (result < 0)
+        {
+            if (errno ==
+                EINTR)
+            {
+                continue;
+            }
+
+
+            return -1;
+        }
+
+
+        if (result == 0)
+        {
+            return 0;
+        }
+
+
+        if (read(
+                fd,
+                &receivedCharacter,
+                1) == 1)
+        {
+            if (receivedCharacter ==
+                '\r')
+            {
+                continue;
+            }
+
+
+            if (receivedCharacter ==
+                '\n')
+            {
+                if (index ==
+                    0U)
+                {
+                    continue;
+                }
+
+
+                buffer[index] =
+                    '\0';
+
+
+                return 1;
+            }
+
+
+            buffer[index++] =
+                receivedCharacter;
+        }
+    }
+
+
+    buffer[index] =
+        '\0';
+
+
+    return 1;
+}
+
+
+/* ============================================================================
+ * SEND COMMAND TO TM4C
+ * ========================================================================== */
+
+static int SendTm4cCommand(
+    int fd,
+    const char *command,
+    const char *expectedResponse,
+    int timeoutSeconds)
+{
+    char response[
+        RESPONSE_SIZE
+    ];
+
+
+    /*
+     * Remove stale receive data before transmitting
+     * a new command.
+     */
+
+    (void)tcflush(
+        fd,
+        TCIFLUSH
+    );
+
+
+    printf(
+        "Pi -> TM4C : %s",
+        command
+    );
+
+
+    if (WriteAll(
+            fd,
+            command) != 0)
+    {
+        uartOnline =
+            false;
+
+
+        RefreshHud();
+
+
+        return -1;
+    }
+
+
+    while (1)
+    {
+        int result;
+
+
+        result =
+            ReadLineTimeout(
+                fd,
+                response,
+                sizeof(response),
+                timeoutSeconds
+            );
+
+
+        if (result <= 0)
+        {
+            fprintf(
+                stderr,
+                "UART response timeout.\n"
+            );
+
+
+            uartOnline =
+                false;
+
+
+            RefreshHud();
+
+
+            return -1;
+        }
+
+
+        printf(
+            "TM4C -> Pi : %s\n",
+            response
+        );
+
+
+        if (strcmp(
+                response,
+                expectedResponse) == 0)
+        {
+            uartOnline =
+                true;
+
+
+            return 0;
+        }
+
+
+        if ((strcmp(
+                response,
+                "ERROR") == 0) ||
+            (strcmp(
+                response,
+                "RANGE") == 0) ||
+            (strcmp(
+                response,
+                "UNKNOWN") == 0))
+        {
+            uartOnline =
+                false;
+
+
+            RefreshHud();
+
+
+            return -1;
+        }
+    }
+}
+
+
+/* ============================================================================
+ * PARSE SERVO ANGLE
+ * ========================================================================== */
+
+static bool ParseAngle(
+    const char *text,
+    int minimum,
+    int maximum,
+    int *angle)
+{
+    char *endPointer;
+
+    long value;
+
+
+    errno =
+        0;
+
+
+    value =
+        strtol(
+            text,
+            &endPointer,
+            10
+        );
+
+
+    while ((*endPointer == ' ') ||
+           (*endPointer == '\t'))
+    {
+        endPointer++;
+    }
+
+
+    if ((errno != 0) ||
+        (*text == '\0') ||
+        (*endPointer != '\0'))
+    {
+        return false;
+    }
+
+
+    if ((value < minimum) ||
+        (value > maximum))
+    {
+        return false;
+    }
+
+
+    *angle =
+        (int)value;
+
+
+    return true;
+}
+
+
+/* ============================================================================
+ * COMMAND MENU
+ * ========================================================================== */
+
+static void PrintMenu(void)
+{
+    printf(
+        "\n"
+        "EO Platform HUD Commands\n"
+        "------------------------\n"
+        "ping\n"
+        "center\n"
+        "pan <45-135>\n"
+        "tilt <55-125>\n"
+        "status\n"
+        "quit\n"
+        "\n"
+    );
+}
+
+
+/* ============================================================================
+ * MAIN
+ * ========================================================================== */
+
+int main(void)
+{
+    int serialFd;
+
+    char input[
+        INPUT_SIZE
+    ];
+
+
+    printf(
+        "\n"
+        "============================================\n"
+        " Real-Time Electro-Optical Platform\n"
+        " TM4C123 + Camera + OLED HUD\n"
+        "============================================\n\n"
+    );
+
+
+    /* ---------------------------------------------------------------------
+     * OLED INITIALIZATION
+     * ------------------------------------------------------------------ */
+
+    if (OledInitialize() != 0)
+    {
+        fprintf(
+            stderr,
+            "ERROR: OLED initialization failed.\n"
+        );
+
+
+        return EXIT_FAILURE;
+    }
+
+
+    /*
+     * Initial screen before UART verification.
+     */
+
+    RefreshHud();
+
+
+    /* ---------------------------------------------------------------------
+     * UART OPEN
+     * ------------------------------------------------------------------ */
+
+    serialFd =
+        open(
+            SERIAL_DEVICE,
+            O_RDWR |
+            O_NOCTTY
+        );
+
+
+    if (serialFd < 0)
+    {
+        perror(
+            "Unable to open UART"
+        );
+
+
+        close(
+            oledFd
+        );
+
+
+        return EXIT_FAILURE;
+    }
+
+
+    if (ConfigureSerialPort(
+            serialFd) != 0)
+    {
+        close(
+            serialFd
+        );
+
+
+        close(
+            oledFd
+        );
+
+
+        return EXIT_FAILURE;
+    }
+
+
+    /* ---------------------------------------------------------------------
+     * STARTUP UART VERIFICATION
+     *
+     * The first UART request occasionally arrives before the serial
+     * interface has fully settled.
+     *
+     * Up to three PING attempts are therefore allowed.
+     * ------------------------------------------------------------------ */
+
+    {
+        int attempt;
+
+
+        sleep(1);
+
+
+        uartOnline =
+            false;
+
+
+        for (attempt = 1;
+             attempt <= 3;
+             attempt++)
+        {
+            printf(
+                "UART startup check: %d/3\n",
+                attempt
+            );
+
+
+            if (SendTm4cCommand(
+                    serialFd,
+                    "PING\n",
+                    "ACK",
+                    2) == 0)
+            {
+                printf(
+                    "UART link established.\n"
+                );
+
+
+                break;
+            }
+
+
+            if (attempt < 3)
+            {
+                printf(
+                    "Retrying UART link...\n"
+                );
+
+
+                sleep(1);
+            }
+        }
+    }
+
+
+    /* ---------------------------------------------------------------------
+     * INITIAL CENTER POSITION
+     * ------------------------------------------------------------------ */
+
+    if (SendTm4cCommand(
+            serialFd,
+            "CENTER\n",
+            "CENTER_OK",
+            2) == 0)
+    {
+        currentPan =
+            CENTER_ANGLE;
+
+
+        currentTilt =
+            CENTER_ANGLE;
+    }
+
+
+    RefreshHud();
+
+
+    PrintMenu();
+
+
+    /* =========================================================================
+     * MAIN INTERACTIVE CONTROL LOOP
+     * ====================================================================== */
+
+    while (1)
+    {
+        int inputReady = 0;
+
+        printf(
+            "EO> "
+        );
+
+        fflush(
+            stdout
+        );
+
+        /*
+         * Wait for a terminal command, but do not block the HUD.
+         * Every 250 ms the OLED is refreshed so external target
+         * state changes appear automatically.
+         */
+        while (!inputReady)
+        {
+            fd_set readSet;
+            struct timeval timeout;
+            int selectResult;
+
+            FD_ZERO(
+                &readSet
+            );
+
+            FD_SET(
+                STDIN_FILENO,
+                &readSet
+            );
+
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 250000;
+
+            selectResult = select(
+                STDIN_FILENO + 1,
+                &readSet,
+                NULL,
+                NULL,
+                &timeout
+            );
+
+            if (selectResult < 0)
+            {
+                perror(
+                    "select"
+                );
+
+                continue;
+            }
+
+            if (selectResult == 0)
+            {
+                RefreshHud();
+                continue;
+            }
+
+            inputReady = 1;
+        }
+
+        if (fgets(
+                input,
+                sizeof(input),
+                stdin) == NULL)
+        {
+            break;
+        }
+
+
+        input[
+            strcspn(
+                input,
+                "\r\n"
+            )
+        ] =
+            '\0';
+
+
+        /* -----------------------------------------------------------------
+         * PING
+         * -------------------------------------------------------------- */
+
+        if (strcmp(
+                input,
+                "ping") == 0)
+        {
+            (void)SendTm4cCommand(
+                serialFd,
+                "PING\n",
+                "ACK",
+                2
+            );
+
+
+            RefreshHud();
+        }
+
+
+        /* -----------------------------------------------------------------
+         * CENTER
+         * -------------------------------------------------------------- */
+
+        else if (strcmp(
+                     input,
+                     "center") == 0)
+        {
+            if (SendTm4cCommand(
+                    serialFd,
+                    "CENTER\n",
+                    "CENTER_OK",
+                    2) == 0)
+            {
+                currentPan =
+                    CENTER_ANGLE;
+
+
+                currentTilt =
+                    CENTER_ANGLE;
+            }
+
+
+            RefreshHud();
+        }
+
+
+        /* -----------------------------------------------------------------
+         * PAN
+         * -------------------------------------------------------------- */
+
+        else if (strncmp(
+                     input,
+                     "pan ",
+                     4U) == 0)
+        {
+            int angle;
+
+            char command[
+                COMMAND_SIZE
+            ];
+
+
+            if (!ParseAngle(
+                    input + 4,
+                    PAN_MIN_ANGLE,
+                    PAN_MAX_ANGLE,
+                    &angle))
+            {
+                printf(
+                    "PAN range: %d-%d degrees\n",
+                    PAN_MIN_ANGLE,
+                    PAN_MAX_ANGLE
+                );
+
+
+                continue;
+            }
+
+
+            snprintf(
+                command,
+                sizeof(command),
+                "PAN %d\n",
+                angle
+            );
+
+
+            if (SendTm4cCommand(
+                    serialFd,
+                    command,
+                    "PAN_OK",
+                    2) == 0)
+            {
+                currentPan =
+                    angle;
+            }
+
+
+            RefreshHud();
+        }
+
+
+        /* -----------------------------------------------------------------
+         * TILT
+         * -------------------------------------------------------------- */
+
+        else if (strncmp(
+                     input,
+                     "tilt ",
+                     5U) == 0)
+        {
+            int angle;
+
+            char command[
+                COMMAND_SIZE
+            ];
+
+
+            if (!ParseAngle(
+                    input + 5,
+                    TILT_MIN_ANGLE,
+                    TILT_MAX_ANGLE,
+                    &angle))
+            {
+                printf(
+                    "TILT range: %d-%d degrees\n",
+                    TILT_MIN_ANGLE,
+                    TILT_MAX_ANGLE
+                );
+
+
+                continue;
+            }
+
+
+            snprintf(
+                command,
+                sizeof(command),
+                "TILT %d\n",
+                angle
+            );
+
+
+            if (SendTm4cCommand(
+                    serialFd,
+                    command,
+                    "TILT_OK",
+                    2) == 0)
+            {
+                currentTilt =
+                    angle;
+            }
+
+
+            RefreshHud();
+        }
+
+
+        /* -----------------------------------------------------------------
+         * STATUS
+         * -------------------------------------------------------------- */
+
+        else if (strcmp(
+                     input,
+                     "status") == 0)
+        {
+            printf(
+                "\n"
+                "Platform Status\n"
+                "---------------\n"
+                "Camera : %s\n"
+                "PAN/AZ : %d degrees\n"
+                "TILT/EL: %d degrees\n"
+                "UART   : %s\n"
+                "\n",
+                CameraConnected()
+                    ? "READY"
+                    : "OFFLINE",
+                currentPan,
+                currentTilt,
+                uartOnline
+                    ? "OK"
+                    : "ERROR"
+            );
+
+
+            RefreshHud();
+        }
+
+
+        /* -----------------------------------------------------------------
+         * QUIT
+         * -------------------------------------------------------------- */
+
+        else if ((strcmp(
+                      input,
+                      "quit") == 0) ||
+                 (strcmp(
+                      input,
+                      "q") == 0))
+        {
+            break;
+        }
+
+
+        /* -----------------------------------------------------------------
+         * UNKNOWN COMMAND
+         * -------------------------------------------------------------- */
+
+        else if (input[0] != '\0')
+        {
+            PrintMenu();
+        }
+    }
+
+
+    /* =========================================================================
+     * CLEAN SHUTDOWN
+     * ====================================================================== */
+
+    printf(
+        "\nReturning platform to center...\n"
+    );
+
+
+    if (SendTm4cCommand(
+            serialFd,
+            "CENTER\n",
+            "CENTER_OK",
+            2) == 0)
+    {
+        currentPan =
+            CENTER_ANGLE;
+
+
+        currentTilt =
+            CENTER_ANGLE;
+    }
+
+
+    RefreshHud();
+
+
+    close(
+        serialFd
+    );
+
+
+    close(
+        oledFd
+    );
+
+
+    printf(
+        "EO platform controller stopped cleanly.\n"
+    );
+
+
+    return EXIT_SUCCESS;
+}
