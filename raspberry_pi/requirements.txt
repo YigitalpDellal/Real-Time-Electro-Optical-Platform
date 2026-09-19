@@ -1,0 +1,5 @@
+# Python dependencies used by the Raspberry Pi modules.
+# On Raspberry Pi OS, distribution packages may be preferable for OpenCV.
+numpy
+opencv-python
+gpiozero
