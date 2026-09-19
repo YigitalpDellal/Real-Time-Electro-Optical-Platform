@@ -997,3 +997,336 @@ static void ProcessCommand(
     /* ========================================================================
      * CENTER
      * ====================================================================== */
+
+    if (strcmp(
+            command,
+            "CENTER") == 0)
+    {
+        /*
+         * Move both axes to the neutral position.
+         */
+        SetPanAngle(
+            CENTER_ANGLE
+        );
+
+
+        SetTiltAngle(
+            CENTER_ANGLE
+        );
+
+
+        UARTSendString(
+            "CENTER_OK\n"
+        );
+
+
+        return;
+    }
+
+
+    /* ========================================================================
+     * TEST
+     * ====================================================================== */
+
+    if (strcmp(
+            command,
+            "TEST") == 0)
+    {
+        /*
+         * Tell Raspberry Pi that physical motion is starting.
+         */
+        UARTSendString(
+            "TEST_START\n"
+        );
+
+
+        RunServoTest();
+
+
+        /*
+         * Tell Raspberry Pi that movement has completed.
+         */
+        UARTSendString(
+            "TEST_OK\n"
+        );
+
+
+        return;
+    }
+
+
+    /* ========================================================================
+     * PAN <angle>
+     * ====================================================================== */
+
+    if (strncmp(
+            command,
+            "PAN ",
+            4U) == 0)
+    {
+        /*
+         * Parse the numeric characters following "PAN ".
+         */
+        if (!ParseUnsigned(
+                command + 4,
+                &angle))
+        {
+            UARTSendString(
+                "ERROR\n"
+            );
+
+
+            return;
+        }
+
+
+        /*
+         * Reject mechanically unsafe PAN values.
+         */
+        if ((angle <
+             PAN_MIN_ANGLE) ||
+            (angle >
+             PAN_MAX_ANGLE))
+        {
+            UARTSendString(
+                "RANGE\n"
+            );
+
+
+            return;
+        }
+
+
+        /*
+         * Apply requested PAN angle.
+         */
+        SetPanAngle(
+            angle
+        );
+
+
+        UARTSendString(
+            "PAN_OK\n"
+        );
+
+
+        return;
+    }
+
+
+    /* ========================================================================
+     * TILT <angle>
+     * ====================================================================== */
+
+    if (strncmp(
+            command,
+            "TILT ",
+            5U) == 0)
+    {
+        /*
+         * Parse numeric characters following "TILT ".
+         */
+        if (!ParseUnsigned(
+                command + 5,
+                &angle))
+        {
+            UARTSendString(
+                "ERROR\n"
+            );
+
+
+            return;
+        }
+
+
+        /*
+         * Reject mechanically unsafe TILT values.
+         */
+        if ((angle <
+             TILT_MIN_ANGLE) ||
+            (angle >
+             TILT_MAX_ANGLE))
+        {
+            UARTSendString(
+                "RANGE\n"
+            );
+
+
+            return;
+        }
+
+
+        /*
+         * Apply requested TILT angle.
+         */
+        SetTiltAngle(
+            angle
+        );
+
+
+        UARTSendString(
+            "TILT_OK\n"
+        );
+
+
+        return;
+    }
+
+
+    /* ========================================================================
+     * UNKNOWN COMMAND
+     * ====================================================================== */
+
+    UARTSendString(
+        "UNKNOWN\n"
+    );
+}
+
+
+/* ============================================================================
+ * MAIN
+ * ========================================================================== */
+
+int main(void)
+{
+    /*
+     * UART receive buffer.
+     */
+    char rxBuffer[
+        RX_BUFFER_SIZE
+    ];
+
+
+    /*  
+     * Current write position inside receive buffer.
+     */
+    uint32_t rxIndex =
+        0U;
+
+
+    char receivedCharacter;
+
+
+    /* ========================================================================
+     * SYSTEM INITIALIZATION
+     * ====================================================================== */
+
+    /*
+     * Configure TM4C system clock to 80 MHz.
+     */
+    ConfigureSystemClock();
+
+
+    /*
+     * Configure hardware PWM for both servos.
+     */
+    ConfigureServoPWM();
+
+
+    /*
+     * Configure UART1 communication with Raspberry Pi.
+     */
+    ConfigureUART1();
+
+
+    /*
+     * Notify Raspberry Pi that firmware initialization has completed.
+     */
+    UARTSendString(
+        "READY\n"
+    );
+
+
+    /* ========================================================================
+     * MAIN COMMAND LOOP
+     * ====================================================================== */
+
+    while (1)
+    {
+        /*
+         * Wait for one UART character.
+         *
+         * This is a blocking UART read.
+         *
+         * Servo PWM continues running independently because PWM generation
+         * is handled by the TM4C hardware peripheral rather than software.
+         */
+        receivedCharacter =
+            (char)UARTCharGet(
+                UART1_BASE
+            );
+
+
+        /*
+         * Newline or carriage return marks the end of one command.
+         */
+        if ((receivedCharacter ==
+             '\n') ||
+            (receivedCharacter ==
+             '\r'))
+        {
+            /*
+             * Ignore completely empty lines.
+             */
+            if (rxIndex > 0U)
+            {
+                /*
+                 * Terminate received text as a valid C string.
+                 */
+                rxBuffer[
+                    rxIndex
+                ] = '\0';
+
+
+                /*
+                 * Execute received command.
+                 */
+                ProcessCommand(
+                    rxBuffer
+                );
+
+
+                /*
+                 * Prepare buffer for next command.
+                 */
+                rxIndex =
+                    0U;
+            }
+        }
+
+        else
+        {
+            /*
+             * Store character if space remains.
+             */
+            if (rxIndex <
+                (RX_BUFFER_SIZE - 1U))
+            {
+                rxBuffer[
+                    rxIndex
+                ] =
+                    receivedCharacter;
+
+
+                rxIndex++;
+            }
+
+            else
+            {
+                /*
+                 * Command exceeded receive-buffer capacity.
+                 *
+                 * Clear the buffer and tell Raspberry Pi that the command
+                 * could not be accepted.
+                 */
+                rxIndex =
+                    0U;
+
+
+                UARTSendString(
+                    "ERROR\n"
+                );
+            }
+        }
+    }
+}
