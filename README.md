@@ -1,296 +1,181 @@
-# Real-Time Electro-Optical Monitoring Platform
+<p align="center">
+  <img src="docs/media/hardware_overview.jpg" alt="Real-Time Electro-Optical Monitoring Platform" width="760">
+</p>
 
-![Project banner](docs/media/project_banner.jpg)
+<h1 align="center">Real-Time Electro-Optical Monitoring Platform</h1>
 
-[![CI](https://github.com/YigitalpDellal/Real-Time-Electro-Optical-Platform/actions/workflows/ci.yml/badge.svg)](https://github.com/YigitalpDellal/Real-Time-Electro-Optical-Platform/actions/workflows/ci.yml)
-![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-3B%2B-C51A4A?logo=raspberrypi&logoColor=white)
-![TM4C123](https://img.shields.io/badge/MCU-TM4C123-CC0000)
-![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
-![C](https://img.shields.io/badge/C-Embedded-00599C?logo=c&logoColor=white)
+<p align="center">
+  Raspberry Pi + TM4C123 embedded vision and pan-tilt control platform
+</p>
 
-A network-enabled pan-tilt electro-optical platform built around a **Raspberry Pi 3 Model B+** and a **TM4C123GXL LaunchPad**. The system combines live video streaming, browser-based control, automatic scanning, motion-based target events, OLED telemetry, acoustic alerts, UART communication, and MCU-side PWM servo control.
+<p align="center">
+  <a href="https://github.com/YigitalpDellal/Real-Time-Electro-Optical-Platform/actions/workflows/ci.yml">
+    <img src="https://github.com/YigitalpDellal/Real-Time-Electro-Optical-Platform/actions/workflows/ci.yml/badge.svg" alt="CI">
+  </a>
+  <img src="https://img.shields.io/badge/Raspberry%20Pi-3B%2B-C51A4A?logo=raspberrypi&logoColor=white" alt="Raspberry Pi 3B+">
+  <img src="https://img.shields.io/badge/MCU-TM4C123-CC0000" alt="TM4C123">
+  <img src="https://img.shields.io/badge/Status-Stable%20Prototype-2ea44f" alt="Stable Prototype">
+</p>
 
-The project was developed as a practical embedded-systems integration exercise: Linux handles networking, video, user interaction, and high-level state; the TM4C123 handles low-level actuator timing and validates motion commands.
+<p align="center">
+  <a href="docs/media/final_demo.mp4"><strong>Final Demo</strong></a> ·
+  <a href="docs/architecture.md">Architecture</a> ·
+  <a href="docs/wiring.md">Wiring</a> ·
+  <a href="docs/troubleshooting.md">Troubleshooting</a> ·
+  <a href="RELEASE_NOTES.md">Release Notes</a>
+</p>
+
+---
+
+## Overview
+
+This project is a network-enabled electro-optical monitoring platform built around a **Raspberry Pi 3 Model B+** and a **TM4C123GXL LaunchPad**.
+
+The Raspberry Pi handles video streaming, browser control, target-event detection, system state, and telemetry. The TM4C123 handles deterministic low-level actuator control and generates the PWM signals for the two-axis pan-tilt mechanism.
+
+The result is a complete embedded-systems integration project combining Linux, microcontroller firmware, UART communication, real hardware, computer vision, and a browser-based control layer.
+
+### Technical snapshot
+
+| Layer | Implementation |
+|---|---|
+| Linux host | Raspberry Pi 3 Model B+ |
+| Real-time controller | TM4C123GXL / TM4C123GH6PM |
+| Camera | Logitech C270 USB webcam |
+| Actuation | 2 × MG90S servos |
+| Host ↔ MCU link | UART, 115200 baud, 8-N-1 |
+| Servo control | TM4C123 PWM, 50 Hz |
+| Display | SSD1306-compatible 128×64 I2C OLED |
+| User interface | Browser-based control panel |
+| Video | MJPEG stream with uStreamer |
+| Detection | Lightweight background-change detector |
+| Alerts | Passive buzzer on Raspberry Pi GPIO18 |
 
 ## Demo
 
-**[▶ Watch the final system demo](docs/media/final_demo.mp4)**
+**[Watch the final end-to-end demonstration](docs/media/final_demo.mp4)**
 
-Additional short clips:
+Additional clips:
 
 - [Hardware walkthrough](docs/media/hardware_walkthrough.mp4)
-- [Pan/tilt motion demo](docs/media/pan_tilt_motion.mp4)
+- [Pan/tilt motion test](docs/media/pan_tilt_motion.mp4)
 - [Pan/tilt close-up](docs/media/pan_tilt_closeup.mp4)
 
-| Hardware overview | OLED telemetry HUD |
-|---|---|
-| ![Hardware overview](docs/media/hardware_overview.jpg) | ![OLED HUD](docs/media/oled_hud.jpg) |
-
-## What the Project Demonstrates
-
-- Hardware/software partitioning between Linux and an MCU
-- UART command/acknowledgement protocol design
-- 50 Hz hobby-servo PWM generation on the TM4C123
-- Mechanical safety limits and recentering logic
-- Browser-based remote control and telemetry
-- Automatic horizontal scan state management
-- Motion/background-based target acquisition and loss events
-- Event-driven scan interruption
-- I2C SSD1306 OLED framebuffer rendering
-- GPIO buzzer signaling
-- Debugging of power, timing, UART, camera, and motion-detection issues
-
-## Features
-
-| Area | Stable implementation |
-|---|---|
-| Video | Logitech C270 MJPEG stream through uStreamer |
-| Manual control | Browser PAN/TILT controls with 5° steps |
-| Centering | `CENTER` returns both axes to 90° |
-| Automatic scan | PAN sweeps between 45° and 135° and reverses at endpoints |
-| Target events | Background-change detector with acquisition/loss debounce |
-| Scan integration | Scan stops when the detector reports a target |
-| Alerts | Two short beeps on acquire, one longer low tone on loss |
-| Telemetry | OLED shows AZ, EL, CAM, LINK, TGT and an EO reticle |
-| Pi ↔ MCU link | UART at 115200 baud, 8-N-1 |
-| Servo control | TM4C123 PWM on PB6/PB7 |
+<table>
+<tr>
+<td width="50%"><img src="docs/media/oled_hud.jpg" alt="OLED HUD"></td>
+<td width="50%"><img src="docs/media/web_control.png" alt="Web control interface"></td>
+</tr>
+<tr>
+<td align="center"><strong>OLED telemetry HUD</strong></td>
+<td align="center"><strong>Browser control interface</strong></td>
+</tr>
+</table>
 
 ## System Architecture
 
-```mermaid
-flowchart TD
+~~~mermaid
+flowchart LR
     CAM[Logitech C270] --> STREAM[uStreamer :8080]
     STREAM --> DET[target_detector.py]
     STREAM --> WEB[eo_web_control.py :8082]
 
     DET --> STATE[/tmp/eo_target_state]
     STATE --> WEB
-    STATE --> HUD[eo_hud_controller.c]
+    STATE --> CTRL[eo_hud_controller.c]
 
-    WEB --> HUD
-    HUD -->|UART 115200 8-N-1| MCU[TM4C123 firmware]
+    WEB --> CTRL
+    CTRL -->|UART 115200| MCU[TM4C123]
 
     MCU -->|PB6 / M0PWM0| PAN[PAN servo]
     MCU -->|PB7 / M0PWM1| TILT[TILT servo]
 
-    HUD --> OLED[SSD1306 OLED]
-    DET --> BUZZER[Buzzer / GPIO18]
-```
+    CTRL --> OLED[SSD1306 OLED]
+    DET --> BUZZER[GPIO18 buzzer]
+~~~
 
-The design deliberately keeps **PWM generation on the TM4C123** rather than Linux. This isolates time-critical actuator control from Linux scheduling while leaving video, networking, and high-level behavior on the Raspberry Pi.
+The architecture intentionally keeps **servo PWM generation on the TM4C123** instead of Linux. High-level networking, video, telemetry, and target-state logic stay on the Raspberry Pi, while time-sensitive actuator control remains on the microcontroller.
 
-More detail: [`docs/architecture.md`](docs/architecture.md)
+For the full design breakdown, see [docs/architecture.md](docs/architecture.md).
 
-## Hardware
+## Core Capabilities
 
-- Raspberry Pi 3 Model B+
-- EK-TM4C123GXL / TM4C123GH6PM LaunchPad
-- Logitech C270 USB webcam
-- 2 × MG90S micro servos
-- Two-axis pan-tilt bracket
-- SSD1306-compatible 128×64 I2C OLED
-- Passive buzzer with transistor/resistor driver stage
-- External regulated 5 V servo supply
-- Breadboards, jumper wires, bulk electrolytic capacitor
+- Live MJPEG camera streaming
+- Browser-based pan/tilt control
+- Automatic platform centering
+- Horizontal automatic scan with endpoint reversal
+- Mechanical angle limiting
+- Target-acquired and target-lost event detection
+- Automatic scan interruption when a target is confirmed
+- Distinct buzzer alerts for target acquisition and loss
+- Live OLED telemetry for azimuth, elevation, camera, link, and target state
+- Raspberry Pi ↔ TM4C123 UART command/acknowledgement protocol
+- MCU-side PWM generation for both servos
+- UART timeout handling and startup link verification
 
-Full connections: [`docs/wiring.md`](docs/wiring.md)
+## Control Protocol
 
-## Operating Limits
+| Command | Response | Function |
+|---|---|---|
+| PING | ACK | Link verification |
+| CENTER | CENTER_OK | Return both axes to 90° |
+| PAN <angle> | PAN_OK | Set horizontal angle |
+| TILT <angle> | TILT_OK | Set vertical angle |
 
-The commanded range is intentionally narrower than the nominal servo range to prevent mechanical binding.
+### Mechanical limits
 
 | Axis | Minimum | Center | Maximum |
 |---|---:|---:|---:|
 | PAN | 45° | 90° | 135° |
 | TILT | 55° | 90° | 125° |
 
-## UART Protocol
-
-The Raspberry Pi sends text commands and waits for a defined acknowledgement from the TM4C123.
-
-| Raspberry Pi command | TM4C123 response |
-|---|---|
-| `PING` | `ACK` |
-| `CENTER` | `CENTER_OK` |
-| `PAN <angle>` | `PAN_OK` |
-| `TILT <angle>` | `TILT_OK` |
-
-The firmware validates requested angles before changing PWM outputs. Invalid input is rejected instead of being forwarded directly to the servos.
+The restricted operating range protects the pan-tilt mechanism from mechanical binding.
 
 ## Target Detection
 
-The stable detector is intentionally lightweight and does **not** claim object recognition. It learns an empty scene and identifies sufficiently large changes relative to that background.
+The stable detector is deliberately lightweight. It performs **background-change detection**, not object classification or identity recognition.
 
-Stable settings:
+Current stable configuration:
 
 | Parameter | Value |
 |---|---:|
 | Processing resolution | 320×240 |
-| Difference threshold | 25 |
 | Minimum contour area | 4000 px |
 | Acquisition confirmation | 4 frames |
 | Loss confirmation | 15 frames |
-| Initial background warm-up | 20 frames |
+| Initial background learning | 20 frames |
 | Loop delay | 0.12 s |
 
-The detector publishes one of the following states to `/tmp/eo_target_state`:
+The detector publishes system state through:
 
-```text
+~~~text
+/tmp/eo_target_state
+~~~
+
+Possible states:
+
+~~~text
 NO_TARGET
 TARGET_ACQUIRED
 TARGET_PRESENT
 TARGET_LOST
-```
+~~~
 
-That file acts as a small inter-process interface between target detection, scan control, and the OLED HUD.
+This keeps target detection loosely coupled from the web-control and OLED processes.
 
-> **Known limitation:** because the stable detector is based on background change, large moving shadows or abrupt lighting changes can look like motion. The demo uses a stable background-learning period before target entry. See [`docs/troubleshooting.md`](docs/troubleshooting.md).
+## Repository Structure
 
-## Automatic Scan
-
-The platform scans horizontally and reverses at each PAN endpoint.
-
-```text
-45° → 55° → ... → 135°
-                  ↓
-45° ← 55° ← ... ← 125°
-```
-
-Stable scan settings:
-
-```text
-SCAN_STEP  = 10 degrees
-SCAN_DELAY = 1.20 seconds
-```
-
-The slower command rate was selected after testing showed that faster command generation could queue motion requests and cause UART response timeouts. When a target is reported, scanning stops and the platform remains stationary until the operator starts it again.
-
-## OLED HUD
-
-The 128×64 display shows live platform state:
-
-- `AZ` — current PAN / azimuth angle
-- `EL` — current TILT / elevation angle
-- `CAM` — camera presence
-- `LINK` — UART link state
-- `TGT` — target state
-- PAN scale and live pointer
-- electro-optical aiming reticle
-
-![OLED telemetry](docs/media/oled_hud.jpg)
-
-## Browser Control
-
-The browser interface runs on port `8082` and provides manual movement, centering, scan start/stop, live camera video, and system telemetry.
-
-![Web control panel](docs/media/web_control.png)
-
-## Build and Run
-
-### Raspberry Pi prerequisites
-
-The tested system expects:
-
-- Raspberry Pi OS
-- UART enabled as `/dev/serial0`
-- I2C enabled as `/dev/i2c-1`
-- Logitech C270 exposed as `/dev/video0`
-- Python 3
-- OpenCV, NumPy, gpiozero
-- uStreamer
-- GCC
-- `v4l2-ctl` and `i2cdetect` for setup/debugging
-
-On Raspberry Pi OS, distribution packages for OpenCV/NumPy/gpiozero are preferable to compiling OpenCV on the Pi.
-
-### 1. Build the Raspberry Pi C controller
-
-From the repository root:
-
-```bash
-gcc -std=c11 -O2 -Wall -Wextra \
-  -o eo_hud_controller_target \
-  controller/eo_hud_controller.c
-```
-
-`eo_web_control.py` launches `./eo_hud_controller_target`, so run the web layer from the repository root.
-
-### 2. Start the camera stream
-
-```bash
-v4l2-ctl -d /dev/video0 --set-ctrl=exposure_dynamic_framerate=0
-
-ustreamer \
-  --device=/dev/video0 \
-  --resolution=640x480 \
-  --desired-fps=30 \
-  --format=MJPEG \
-  --host=0.0.0.0 \
-  --port=8080
-```
-
-### 3. Start target detection
-
-In a second terminal:
-
-```bash
-python3 raspberry_pi/target_detector.py
-```
-
-Keep the scene still during the initial background-learning period.
-
-### 4. Start web control + HUD integration
-
-In a third terminal, from the repository root:
-
-```bash
-python3 raspberry_pi/eo_web_control.py
-```
-
-Open:
-
-```text
-http://<RASPBERRY_PI_IP>:8082/
-```
-
-## TM4C123 Firmware
-
-The TM4C firmware is intended to be built and flashed with Code Composer Studio and TivaWare/DriverLib available to the project.
-
-Key configuration:
-
-```text
-System clock : 80 MHz
-UART1        : PB0 / U1RX, PB1 / U1TX
-UART format  : 115200 baud, 8-N-1
-PAN PWM      : PB6 / M0PWM0
-TILT PWM     : PB7 / M0PWM1
-Servo PWM    : 50 Hz
-```
-
-Source: [`tm4c/tm4c_pan_tilt_firmware.c`](tm4c/tm4c_pan_tilt_firmware.c)
-
-## Verification Evidence
-
-Target acquisition and loss:
-
-![Target detection log](docs/media/target_detection_log.png)
-
-Automatic scan stopping after target detection:
-
-![Scan stop log](docs/media/scan_target_stop_log.png)
-
-## Repository Layout
-
-```text
+~~~text
 .
 ├── README.md
 ├── RELEASE_NOTES.md
+├── Makefile
 ├── controller/
 │   └── eo_hud_controller.c
 ├── raspberry_pi/
 │   ├── eo_web_control.py
-│   └── target_detector.py
+│   ├── target_detector.py
+│   └── requirements.txt
 ├── tm4c/
 │   └── tm4c_pan_tilt_firmware.c
 ├── docs/
@@ -303,33 +188,124 @@ Automatic scan stopping after target detection:
 └── .github/
     └── workflows/
         └── ci.yml
-```
+~~~
 
-## Experimental Tracking Work
+## Build and Run
 
-Classical OpenCV trackers including MOSSE, KCF, and CSRT were evaluated during development. They were useful for exploring visual-lock behavior, but the stable release does not claim persistent object tracking because drift, reacquisition latency, changing appearance, and Raspberry Pi 3 compute limits made those versions less predictable.
+### 1. Validate the repository
 
-The final architecture therefore uses deterministic manual/scan control with target events, while tracking remains documented as engineering exploration in [`experiments/README.md`](experiments/README.md).
+~~~bash
+make check
+~~~
 
-## Engineering Notes
+This checks both Raspberry Pi Python modules and builds the Linux-side C controller.
 
-The project went through real hardware/debugging iterations including:
+### 2. Build the Raspberry Pi controller
 
-- servo power instability and jitter,
-- common-ground issues,
-- mechanical endpoint strain,
-- UART startup retries and stale receive data,
-- queued scan commands and UART timeouts,
-- camera stream/device issues,
-- background-learning false positives,
-- target-loss debounce trade-offs,
-- OLED initialization and visibility,
-- experimental tracker drift.
+~~~bash
+make build
+~~~
 
-The fixes and reasoning are documented in [`docs/troubleshooting.md`](docs/troubleshooting.md).
+### 3. Start the camera stream
 
-## Stable Release
+~~~bash
+v4l2-ctl -d /dev/video0 --set-ctrl=exposure_dynamic_framerate=0
 
-The stable release includes manual pan/tilt control, recentering, automatic horizontal scanning, target acquisition/loss events, scan interruption, buzzer alerts, OLED telemetry, live video, UART command handling, and TM4C123 PWM servo control.
+ustreamer \
+  --device=/dev/video0 \
+  --resolution=640x480 \
+  --desired-fps=30 \
+  --format=MJPEG \
+  --host=0.0.0.0 \
+  --port=8080
+~~~
 
-See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for the stable feature boundary and known limitation.
+### 4. Start target detection
+
+~~~bash
+python3 raspberry_pi/target_detector.py
+~~~
+
+Keep the scene stable during the initial background-learning period.
+
+### 5. Start web control and telemetry
+
+~~~bash
+python3 raspberry_pi/eo_web_control.py
+~~~
+
+Then open:
+
+~~~text
+http://<RASPBERRY_PI_IP>:8082/
+~~~
+
+### Raspberry Pi Python dependencies
+
+~~~bash
+pip install -r raspberry_pi/requirements.txt
+~~~
+
+On Raspberry Pi OS, system packages for OpenCV and NumPy may be preferable to compiling/installing large Python wheels locally.
+
+## TM4C123 Firmware
+
+The TM4C firmware is built and flashed using **Code Composer Studio** with TivaWare/DriverLib available to the project.
+
+Key configuration:
+
+~~~text
+System clock : 80 MHz
+UART1        : PB0 / U1RX, PB1 / U1TX
+UART         : 115200 baud, 8-N-1
+PAN PWM      : PB6 / M0PWM0
+TILT PWM     : PB7 / M0PWM1
+Servo PWM    : 50 Hz
+~~~
+
+Source: [tm4c/tm4c_pan_tilt_firmware.c](tm4c/tm4c_pan_tilt_firmware.c)
+
+## Verification
+
+The repository includes real test evidence from the working system.
+
+<table>
+<tr>
+<td width="50%"><img src="docs/media/target_detection_log.png" alt="Target detection log"></td>
+<td width="50%"><img src="docs/media/scan_target_stop_log.png" alt="Scan stop log"></td>
+</tr>
+<tr>
+<td align="center"><strong>Target acquisition / loss</strong></td>
+<td align="center"><strong>Scan interruption / UART traffic</strong></td>
+</tr>
+</table>
+
+GitHub Actions also performs:
+
+- Python syntax validation
+- Linux-side C controller build with -Wall -Wextra
+
+## Engineering Scope
+
+This repository represents the **stable prototype**. Classical OpenCV trackers such as MOSSE, KCF, and CSRT were evaluated during development, but they are not presented as stable features because of drift, reacquisition latency, and Raspberry Pi 3 performance constraints.
+
+The stable design therefore prioritizes deterministic actuator control, operator control, automatic scanning, and reliable target events.
+
+Development notes and adjusted approaches are documented in [docs/troubleshooting.md](docs/troubleshooting.md) and [experiments/README.md](experiments/README.md).
+
+## Known Limitation
+
+The target detector is based on scene change. Large moving shadows or abrupt lighting changes can therefore cause false target events. The final demo uses a stable background-learning period before target entry.
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — software and hardware architecture
+- [Wiring](docs/wiring.md) — wiring and signal connections
+- [Troubleshooting](docs/troubleshooting.md) — debugging history and fixes
+- [Release Notes](RELEASE_NOTES.md) — stable feature boundary and release notes
+
+---
+
+<p align="center">
+  <strong>Embedded Linux · TM4C123 · UART · PWM · Computer Vision · Hardware Integration</strong>
+</p>
