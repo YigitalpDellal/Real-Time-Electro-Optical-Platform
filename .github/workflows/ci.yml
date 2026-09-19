@@ -5,19 +5,12 @@ on:
   pull_request:
 
 jobs:
-  syntax-and-build:
+  validate:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Python syntax check
-        run: |
-          python3 -m py_compile raspberry_pi/target_detector.py
-          python3 -m py_compile raspberry_pi/eo_web_control.py
-
-      - name: Build Raspberry Pi C controller
-        run: |
-          gcc -std=c11 -O2 -Wall -Wextra \
-            -o /tmp/eo_hud_controller_target \
-            controller/eo_hud_controller.c
+      - name: Validate project
+        run: make check
