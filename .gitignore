@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.o
+*.out
+*.elf
+*.map
+*.log
+.DS_Store
+.vscode/
+.idea/
+*_BACKUP*
+*_BEFORE_*
+*_WORKING*
+*_PRE_*
+eo_hud_controller_target
