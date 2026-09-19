@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Raspberry%20Pi-3B%2B-C51A4A?logo=raspberrypi&logoColor=white" alt="Raspberry Pi 3B+">
   <img src="https://img.shields.io/badge/MCU-TM4C123-CC0000" alt="TM4C123">
   <img src="https://img.shields.io/badge/UART-115200%208N1-555555" alt="UART 115200 8N1">
-  <img src="https://img.shields.io/badge/Status-Stable%20Prototype-2ea44f" alt="Stable Prototype">
+  <img src="https://img.shields.io/badge/Status-Stable%20Prototype-2ea44f" alt="Stable Prototype">\n  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
 </p>
 
 <p align="center">
