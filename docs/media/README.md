@@ -13,6 +13,5 @@ Curated media for the stable release.
 
 - `hardware_overview.jpg` — final hardware layout and README hero image
 - `oled_hud.jpg` — OLED telemetry close-up
-- `web_control.jpg` — browser control interface with browser chrome and local network address removed
 
 Published still images are curated to avoid exposing unnecessary local-network information. Public copies are re-encoded before publication.

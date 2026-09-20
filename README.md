@@ -54,7 +54,7 @@ The Raspberry Pi performs video streaming, target-event detection, web control, 
 
 <p align="center">
   <a href="docs/media/final_demo.mp4">
-    <img src="docs/media/web_control.jpg" alt="Open final demo video" width="780">
+    <img src="docs/media/hardware_overview.jpg" alt="Open final demo video" width="780">
   </a>
 </p>
 
@@ -73,9 +73,9 @@ The Raspberry Pi performs video streaming, target-event detection, web control, 
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/media/web_control.jpg" alt="Browser control interface"><br>
-      <strong>Browser Control Interface</strong><br>
-      Live video, manual pan/tilt, centering, scan control and telemetry.
+      <img src="docs/media/hardware_overview.jpg" alt="Browser control interface"><br>
+      <strong>Hardware Overview</strong><br>
+      Raspberry Pi, TM4C123, camera, pan-tilt mechanism and supporting electronics.
     </td>
     <td width="50%" align="center">
       <img src="docs/media/oled_hud.jpg" alt="OLED telemetry HUD"><br>
