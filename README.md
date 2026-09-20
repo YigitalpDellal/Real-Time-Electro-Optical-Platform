@@ -29,7 +29,7 @@
 ---
 
 <p align="center">
-  <img src="docs/media/hardware_overview.jpg" alt="Complete electro-optical platform hardware" width="760">
+  <img src="docs/media/project_banner_safe.jpg" alt="Real-Time Electro-Optical Monitoring Platform" width="920">
 </p>
 
 ## Project Overview
@@ -266,6 +266,10 @@ The firmware uses a wider servo calibration internally, but normal operation is 
 
 ## Browser Control Layer
 
+<p align="center">
+  <img src="docs/media/web_control_safe.jpg" alt="Browser-based electro-optical platform control interface" width="820">
+</p>
+
 The web interface provides a single operator view for:
 
 - live camera stream
@@ -336,6 +340,14 @@ TARGET_LOST
 OFFLINE
 ```
 
+### Detection evidence
+
+<p align="center">
+  <img src="docs/media/target_detection_log_safe.jpg" alt="Target acquisition and loss detection log" width="860">
+</p>
+
+The terminal evidence above shows repeated acquisition/loss transitions from the real detector process.
+
 Example detector output from the working system:
 
 ```text
@@ -389,6 +401,14 @@ When a confirmed target is reported:
 ```
 
 the automatic scan is disabled and the mechanism remains stationary for operator control.
+
+### Scan / UART integration evidence
+
+<p align="center">
+  <img src="docs/media/scan_target_stop_log_safe.jpg" alt="Automatic scan stop and UART acknowledgement log" width="860">
+</p>
+
+The trace shows automatic PAN commands being acknowledged by the TM4C123, followed by target-triggered scan interruption and platform recentering.
 
 A real UART/control trace from the integrated test looked like:
 
