@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/media/project_banner.jpg" alt="Real-Time Electro-Optical Monitoring Platform" width="920">
+  <img src="docs/media/hardware_overview.jpg" alt="Real-Time Electro-Optical Monitoring Platform" width="920">
 </p>
 
 <h1 align="center">Real-Time Electro-Optical Monitoring Platform</h1>
@@ -15,7 +15,8 @@
   <img src="https://img.shields.io/badge/Raspberry%20Pi-3B%2B-C51A4A?logo=raspberrypi&logoColor=white" alt="Raspberry Pi 3B+">
   <img src="https://img.shields.io/badge/MCU-TM4C123-CC0000" alt="TM4C123">
   <img src="https://img.shields.io/badge/UART-115200%208N1-555555" alt="UART 115200 8N1">
-  <img src="https://img.shields.io/badge/Status-Stable%20Prototype-2ea44f" alt="Stable Prototype">\n  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
+  <img src="https://img.shields.io/badge/Status-Stable%20Prototype-2ea44f" alt="Stable Prototype">
+  <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
 </p>
 
 <p align="center">
@@ -53,7 +54,7 @@ The Raspberry Pi performs video streaming, target-event detection, web control, 
 
 <p align="center">
   <a href="docs/media/final_demo.mp4">
-    <img src="docs/media/hardware_overview.jpg" alt="Open final demo video" width="780">
+    <img src="docs/media/web_control.jpg" alt="Open final demo video" width="780">
   </a>
 </p>
 
@@ -80,18 +81,6 @@ The Raspberry Pi performs video streaming, target-event detection, web control, 
       <img src="docs/media/oled_hud.jpg" alt="OLED telemetry HUD"><br>
       <strong>OLED Telemetry HUD</strong><br>
       Live azimuth, elevation, camera, target and UART-link state.
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="docs/media/target_detection_log.png" alt="Target detection evidence"><br>
-      <strong>Target Event Detection</strong><br>
-      Acquired/lost state transitions generated from the camera stream.
-    </td>
-    <td width="50%" align="center">
-      <img src="docs/media/scan_target_stop_log.png" alt="Automatic scan interruption evidence"><br>
-      <strong>Automatic Scan Integration</strong><br>
-      Scan motion stops after a confirmed target event.
     </td>
   </tr>
 </table>

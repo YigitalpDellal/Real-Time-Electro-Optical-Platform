@@ -11,11 +11,8 @@ Curated media for the stable release.
 
 ## Photos and screenshots
 
-- `project_banner.jpg` — README banner assembled from project photos/screenshots
-- `hardware_overview.jpg` — final hardware layout
+- `hardware_overview.jpg` — final hardware layout and README hero image
 - `oled_hud.jpg` — OLED telemetry close-up
-- `web_control.png` — browser control interface
-- `target_detection_log.png` — target acquired/lost terminal evidence
-- `scan_target_stop_log.png` — automatic scan stop / UART evidence
+- `web_control.jpg` — browser control interface with browser chrome and local network address removed
 
-The public copies in this folder were re-encoded with metadata removed before publication.
+Published still images are curated to avoid exposing unnecessary local-network information. Public copies are re-encoded before publication.
