@@ -1,0 +1,87 @@
+name: Generate Safe Media
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Pillow
+        run: python3 -m pip install --quiet pillow
+
+      - name: Download source visuals from previous stable commit
+        run: |
+          mkdir -p /tmp/eo_media
+          BASE="https://raw.githubusercontent.com/${{ github.repository }}/1834bb4f2866b5991f9d00cf23781ba10e636bda/docs/media"
+          curl -L "$BASE/web_control.png" -o /tmp/eo_media/web_control.png
+          curl -L "$BASE/target_detection_log.png" -o /tmp/eo_media/target_detection_log.png
+          curl -L "$BASE/scan_target_stop_log.png" -o /tmp/eo_media/scan_target_stop_log.png
+
+      - name: Create IP-safe portfolio images
+        run: |
+          python3 - <<'PY'
+          from PIL import Image, ImageDraw, ImageFont
+          from pathlib import Path
+          media = Path('docs/media')
+          media.mkdir(parents=True, exist_ok=True)
+          web = Image.open('/tmp/eo_media/web_control.png').convert('RGB')
+          web = web.crop((0, 112, web.width - 18, web.height - 6))
+          target_w = 1400
+          target_h = round(web.height * target_w / web.width)
+          web = web.resize((target_w, target_h), Image.Resampling.LANCZOS)
+          web.save(media / 'web_control_safe.jpg', quality=95, optimize=True, subsampling=0)
+          for src_name, dst_name in [('target_detection_log.png','target_detection_log_safe.jpg'),('scan_target_stop_log.png','scan_target_stop_log_safe.jpg')]:
+              im = Image.open('/tmp/eo_media/' + src_name).convert('RGB')
+              im = im.crop((0, 30, im.width, im.height - 28))
+              w = 1400
+              h = round(im.height * w / im.width)
+              im = im.resize((w, h), Image.Resampling.LANCZOS)
+              im.save(media / dst_name, quality=94, optimize=True, subsampling=0)
+          W, H = 1600, 760
+          header_h = 110
+          canvas = Image.new('RGB', (W, H), (8,14,22))
+          draw = ImageDraw.Draw(canvas)
+          bold = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+          reg = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+          title = ImageFont.truetype(bold, 42)
+          sub = ImageFont.truetype(reg, 25)
+          draw.text((44,20), 'Real-Time Electro-Optical Monitoring Platform', font=title, fill=(245,247,250))
+          draw.text((46,70), 'Raspberry Pi 3B+  •  TM4C123  •  UART  •  PWM  •  OLED  •  Live Video', font=sub, fill=(185,198,215))
+          def cover(im, width, height):
+              im = im.convert('RGB')
+              src_ar = im.width / im.height
+              dst_ar = width / height
+              if src_ar > dst_ar:
+                  nw = int(im.height * dst_ar); x = (im.width - nw)//2; im = im.crop((x,0,x+nw,im.height))
+              else:
+                  nh = int(im.width / dst_ar); y = max(0,(im.height-nh)//2); im = im.crop((0,y,im.width,y+nh))
+              return im.resize((width,height), Image.Resampling.LANCZOS)
+          hardware = cover(Image.open(media / 'hardware_overview.jpg'), 800, H-header_h)
+          webclean = cover(Image.open(media / 'web_control_safe.jpg'), 800, H-header_h)
+          canvas.paste(hardware, (0,header_h)); canvas.paste(webclean, (800,header_h))
+          draw.line((800,header_h,800,H), fill=(40,50,62), width=2)
+          canvas.save(media / 'project_banner_safe.jpg', quality=94, optimize=True, subsampling=0)
+          PY
+
+      - name: Commit generated media
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/media/web_control_safe.jpg docs/media/target_detection_log_safe.jpg docs/media/scan_target_stop_log_safe.jpg docs/media/project_banner_safe.jpg
+          if git diff --cached --quiet; then
+            echo "No media changes."
+          else
+            git commit -m "docs: generate clean portfolio visuals"
+            git push
+          fi
