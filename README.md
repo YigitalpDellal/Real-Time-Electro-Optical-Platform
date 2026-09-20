@@ -72,7 +72,7 @@ The Raspberry Pi performs video streaming, target-event detection, web control, 
 <table>
   <tr>
     <td width="50%" align="center">
-      <img src="docs/media/web_control.png" alt="Browser control interface"><br>
+      <img src="docs/media/web_control.jpg" alt="Browser control interface"><br>
       <strong>Browser Control Interface</strong><br>
       Live video, manual pan/tilt, centering, scan control and telemetry.
     </td>
